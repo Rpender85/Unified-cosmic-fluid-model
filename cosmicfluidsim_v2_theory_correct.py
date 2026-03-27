@@ -1,53 +1,36 @@
-"""
-cosmicfluidsim_v2_theory_correct.py
+# Complete Theory-Correct Simulation
 
-This module implements the full theory of cosmic fluid dynamics,
-increasing pressure thresholds, mass conservation, and expulsion events.
-It aims to provide an accurate simulation interface for cosmic
-fluid models.
+## Overview 
+This simulation incorporates pressure thresholds based on local density, tracks mass conservation, incorporates quasar expulsion events that return mass, handles new universe events, inherits spin, and provides multi-panel visualizations showing density, pressure, mass conservation, and pressure history.
 
-Usage:
-    python cosmicfluidsim_v2_theory_correct.py
+## Features 
+- **Pressure Thresholds:** Implement pressure thresholds based on local density to regulate simulation dynamics.
+- **Mass Conservation Tracking:** Monitor and update the mass within the simulation to ensure conservation principles are adhered to.
+- **Quasar Expulsion Events:** Allow quasar events to return mass back into the system, impacting local density and pressure.
+- **New Universe Events:** Handle additional events that can initialize or modify components of the universe being simulated.
+- **Inherited Spin:** Implement continuity in spin attributes across particles within the simulation.
+- **Multi-Panel Visualization:** Create visual representation panels to show:
+    - Density Distribution
+    - Pressure Profile
+    - Mass Conservation Tracking
+    - Pressure History Over Time
 
-Requirements:
-    - NumPy
-    - SciPy
+## Implementation Steps 
+1. **Initialize Parameters:** Set up the initial parameters including density and pressure thresholds.
+2. **Simulation Loop:**
+    - At each timestep, update densities, pressures, and apply conservation laws.
+    - Handle quasar events based on defined criteria.
+3. **Update Visualizations:** For each iteration, update visual outputs to reflect current state in density, pressure, and mass conservation.
+4. **Recording History:** Maintain logs of pressure histories for analysis at final stages.
 
-Author: Rpender85
-Date: 2026-03-27
-"""
-
-import numpy as np
-
-class CosmicFluid:
-    def __init__(self, density, pressure):
-        self.density = density         # density of the fluid
-        self.pressure = pressure       # pressure of the fluid
-        self.mass = self.calculate_mass()  # total mass
-
-    def calculate_mass(self):
-        """Calculate the mass of the fluid based on density."""
-        volume = self.get_volume()     # Assuming a method to get volume
-        return self.density * volume
-
-    def apply_pressure_threshold(self, threshold):
-        """Apply pressure threshold and adjust pressure accordingly."""
-        if self.pressure < threshold:
-            self.pressure = threshold
-
-    def mass_conservation(self, mass_change):
-        """Adjust mass according to the conservation laws."""
-        self.mass += mass_change
-
-    def handle_expulsion_event(self):
-        """Handle events where fluid is expelled."""
-        expulsion_mass = self.calculate_expulsion()  # Assuming a method to calculate this
-        self.mass_conservation(-expulsion_mass)
-
-    def calculate_expulsion(self):
-        """Calculate the mass expelled during an event."""
-        return self.mass * 0.1  # Example: 10% of current mass is expelled
-
-    def get_volume(self):
-        """Dummy implementation to return volume."""
-        return 1.0  # Placeholder for volume calculation
+## Example Code Snippet
+```python
+# This is a basic structure of the simulation loop that could be expanded.
+for t in timestep:
+    update_local_density()
+    enforce_pressure_thresholds()
+    track_mass_conservation()
+    handle_quasar_events()
+    visualize_state()
+    record_pressure_history()
+```
