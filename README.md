@@ -1,7 +1,7 @@
 # Emergent Gravity from a Dynamic Fluid Spacetime
 
-**Author:** [Your Name]  
-**Date:** October 2024  
+**Author:** Ralph Pender
+**Date:** April 10 2026
 **Status:** Simulations Verified (Bullet Cluster, Spiral Galaxies, Big Bang)
 
 ## 🌌 Overview
@@ -56,7 +56,7 @@ The Python simulations included in this repository demonstrate:
 - `/paper`: Draft manuscript and abstract.
 
 ## 📞 Contact & Collaboration
-This work is open for peer review and collaboration. For inquiries, please contact [Your Email] or open an issue.
+This work is open for peer review and collaboration. For inquiries, please contact ralphpender@gmail.com or open an issue.
 
 ---
 *Note: This is a theoretical framework. All simulations are numerical approximations intended to validate the core physical mechanisms.*
