@@ -1,0 +1,138 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ============================================
+# BULLET CLUSTER SIMULATION - SAFE VERSION
+# ============================================
+# Uses * instead of ** to avoid syntax errors
+# ============================================
+
+# --- CONFIGURATION ---
+grid_size = 150
+dt = 0.01
+steps = 500
+plot_interval = 50
+
+# Physics Constants
+sigma = 1.5
+gas_drag = 0.02
+damping = 0.005
+
+# --- INITIALIZE GRID ---
+x = np.linspace(0, grid_size, grid_size)
+y = np.linspace(0, grid_size, grid_size)
+X, Y = np.meshgrid(x, y)
+center = grid_size // 2
+
+# 1. Gas Clouds (Two blobs moving toward center)
+# Calculate distance squared using multiplication: (x-a)*(x-a)
+# Left Blob (centered at 50)
+dx_left = X - 50
+dy_left = Y - center
+dist_left = dx_left * dx_left + dy_left * dy_left
+gas_left = np.exp(-dist_left / 150)
+
+# Right Blob (centered at 100)
+dx_right = X - 100
+dy_right = Y - center
+dist_right = dx_right * dx_right + dy_right * dy_right
+gas_right = np.exp(-dist_right / 150)
+
+rho_gas = 0.5 * (gas_left + gas_right)
+
+# 2. Vorticity (Gravity signal) - Starts at zero
+omega = np.zeros((grid_size, grid_size))
+
+# 3. Core Positions (Gravity Sources)
+core_left_x = 50.0
+core_right_x = 100.0
+core_y = float(center)
+core_radius = 4.0
+
+# Velocities
+vel_left = 0.4
+vel_right = -0.4
+
+print("=" * 50)
+print("BULLET CLUSTER SIMULATION STARTING")
+print("=" * 50)
+print("Gas (Yellow): High drag. Will COLLIDE and STOP.")
+print("Gravity (Cyan): No drag. Will PASS THROUGH.")
+print("=" * 50)
+
+# --- SIMULATION LOOP ---
+for t in range(steps):
+    # 1. Update Core Positions
+    core_left_x = core_left_x + vel_left
+    core_right_x = core_right_x + vel_right
+    
+    # Clamp to grid bounds
+    if core_left_x < 5: core_left_x = 5
+    if core_left_x > grid_size - 5: core_left_x = grid_size - 5
+    if core_right_x < 5: core_right_x = 5
+    if core_right_x > grid_size - 5: core_right_x = grid_size - 5
+    
+    # 2. Create Core Masks (Vorticity Sources)
+    # Distance squared using multiplication
+    dx_cl = X - core_left_x
+    dy_cl = Y - core_y
+    dist_cl = dx_cl * dx_cl + dy_cl * dy_cl
+    
+    dx_cr = X - core_right_x
+    dy_cr = Y - core_y
+    dist_cr = dx_cr * dx_cr + dy_cr * dy_cr
+    
+    core_radius_sq = core_radius * core_radius
+    core_mask_left = (dist_cl <= core_radius_sq).astype(float)
+    core_mask_right = (dist_cr <= core_radius_sq).astype(float)
+    
+    # 3. Gas Dynamics (Slows Down)
+    rho_gas = rho_gas * (1.0 - gas_drag)
+    if np.min(rho_gas) < 0:
+        rho_gas = np.maximum(rho_gas, 0.0)
+    
+    # 4. Vorticity Evolution
+    source_term = sigma * (core_mask_left + core_mask_right)
+    
+    # Advection (Shift)
+    shift_l = int(vel_left * 10)
+    shift_r = int(vel_right * 10)
+    
+    omega = np.roll(omega, shift_l, axis=1)
+    omega = np.roll(omega, shift_r, axis=1)
+    
+    omega = omega + dt * source_term
+    omega = omega * (1.0 - damping)
+    
+    # 5. Visualization
+    if t % plot_interval == 0:
+        fig, ax = plt.subplots(figsize=(10, 5))
+        
+        im_gas = ax.imshow(rho_gas, cmap='hot', origin='lower', 
+                           vmin=0, vmax=0.5, extent=[0, grid_size, 0, grid_size])
+        
+        if np.max(omega) > 0.05:
+            levels = np.linspace(0, np.max(omega), 10)
+            cs = ax.contour(omega, levels=levels, colors='cyan', linewidths=1.5, alpha=0.8)
+        
+        title = "Bullet Cluster (Step " + str(t) + ")"
+        ax.set_title(title)
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        plt.colorbar(im_gas, ax=ax, label='Gas Density')
+        
+        ax.scatter([core_left_x], [core_y], c='white', s=80, marker='x', label='Core')
+        ax.scatter([core_right_x], [core_y], c='white', s=80, marker='x')
+        ax.legend(loc='upper right')
+        
+        plt.tight_layout()
+        plt.show()
+        
+        gas_total = np.sum(rho_gas)
+        om_total = np.sum(omega)
+        print("Step " + str(t) + " | Gas: " + str(round(gas_total, 2)) + 
+              " | Vorticity: " + str(round(om_total, 2)))
+
+print("=" * 50)
+print("SIMULATION COMPLETE")
+print("=" * 50)
