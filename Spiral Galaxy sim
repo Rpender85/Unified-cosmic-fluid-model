@@ -1,0 +1,111 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ============================================
+# SPIRAL GALAXY SIMULATION - FINAL COMPLETE
+# ============================================
+
+# --- CONFIGURATION ---
+grid_size = 200
+dt = 0.005
+steps = 1000
+plot_interval = 100
+
+# Physics Constants
+k = 0.5
+sigma = 2.0
+alpha = 0.02
+damping = 0.005
+diffusion = 0.001
+
+# --- INITIALIZE GRID ---
+x = np.linspace(0, grid_size, grid_size)
+y = np.linspace(0, grid_size, grid_size)
+X, Y = np.meshgrid(x, y)
+center = grid_size // 2
+
+# Distance from Center (R)
+dx = X - center
+dy = Y - center
+R = np.sqrt(dx * dx + dy * dy)
+
+# 1. Density: Uniform disk + central bulge
+rho = np.ones((grid_size, grid_size)) * 1.0
+rho = rho + 0.5 * np.exp(-R / 30.0)
+
+# 2. Velocity: Initial Rotation
+safe_R = np.where(R == 0, 1.0, R)
+v_theta = 2.0 / np.sqrt(safe_R + 1.0)
+
+sin_t = dy / safe_R
+cos_t = dx / safe_R
+
+vx = -v_theta * sin_t
+vy = v_theta * cos_t
+
+# 3. Vorticity: Start at ZERO
+omega = np.zeros((grid_size, grid_size))
+
+# 4. Black Hole Mask
+core_radius = 4.0
+core_radius_sq = core_radius * core_radius
+core_mask = (dx * dx + dy * dy <= core_radius_sq).astype(float)
+
+print("=" * 50)
+print("SPIRAL GALAXY SIMULATION STARTING")
+print("Watch for cyan spiral arms forming!")
+print("=" * 50)
+
+# --- SIMULATION LOOP ---
+for t in range(steps):
+    # 1. Gradients
+    grad_rho_x = np.gradient(rho, axis=1)
+    grad_rho_y = np.gradient(rho, axis=0)
+    
+    # 2. Gravity & Velocity Update
+    ax = -k * grad_rho_x
+    ay = -k * grad_rho_y
+    vx = vx + dt * ax
+    vy = vy + dt * ay
+    
+    # 3. Density Continuity
+    flux_x = rho * vx
+    flux_y = rho * vy
+    
+    div_flux_x = np.gradient(flux_x, axis=1)
+    div_flux_y = np.gradient(flux_y, axis=0)
+    
+    rho = rho - dt * (div_flux_x + div_flux_y)
+    
+    # Diffusion
+    lap_x = np.gradient(np.gradient(rho, axis=1), axis=1)
+    lap_y = np.gradient(np.gradient(rho, axis=0), axis=0)
+    rho = rho + dt * diffusion * (lap_x + lap_y)
+    
+    # BH Sink
+    rho = rho - dt * alpha * core_mask
+    rho = np.maximum(rho, 0.1)
+    
+    # 4. Vorticity Evolution
+    grad_omega_x = np.gradient(omega, axis=1)
+    grad_omega_y = np.gradient(omega, axis=0)
+    
+    # Advection: (v · ∇)ω
+    adv_x = vx * grad_omega_x
+    adv_y = vy * grad_omega_y
+    
+    # Source Term
+    source_term = sigma * core_mask
+    
+    # Update Vorticity
+    omega = omega + dt * (source_term - adv_x - adv_y - damping * omega)
+    
+    # 5. Visualization
+    if t % plot_interval == 0:
+        fig, ax_plot = plt.subplots(figsize=(8, 8))
+        
+        # Density Heatmap
+        im = ax_plot.imshow(rho, cmap='inferno', origin='lower', 
+                            extent=[0, grid_size, 0, grid_size], alpha=0.8)
+        
+        # Vorticity Contours (Spiral
