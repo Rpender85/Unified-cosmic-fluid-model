@@ -1,0 +1,95 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# --- SETTINGS ---
+N = 100          # Grid size (smaller = faster)
+dt = 0.02
+steps = 400
+crit_rho = 2.0   # Critical density for Bang
+
+# --- CREATE GRID ---
+x = np.linspace(-1, 1, N)
+y = np.linspace(-1, 1, N)
+X, Y = np.meshgrid(x, y)
+R = np.sqrt(X*X + Y*Y)
+
+# --- INITIAL STATE ---
+rho = np.ones((N,N)) * 1.0
+rho = rho + 0.2 * np.exp(-R*5)  # Small bump in center
+
+# Velocity (Rotation)
+theta = np.arctan2(Y, X)
+v_mag = 0.5 / (R + 0.1)
+Vx = -v_mag * np.sin(theta)
+Vy = v_mag * np.cos(theta)
+
+# Vorticity (Spin)
+dVx_dy = np.gradient(Vx, axis=0)
+dVy_dx = np.gradient(Vy, axis=1)
+Omega = dVy_dx - dVx_dy
+
+bang = False
+bang_step = 0
+
+print("Starting Big Bang Sim...")
+
+# --- LOOP ---
+for t in range(steps):
+    max_r = np.max(rho)
+    max_o = np.max(Omega)
+    
+    # Check Bang
+    if not bang and max_r > crit_rho:
+        bang = True
+        bang_step = t
+        print("!!! BANG at step", t, "!")
+    
+    # Core Mask (Center)
+    mask = (R < 0.1).astype(float)
+    
+    # Source Logic
+    if bang:
+        src = 0.05
+        v_src = 3.0 * (1 + max_o)
+    else:
+        src = -0.05
+        v_src = 1.0 * (1 + (max_r - 1.0) * 2.0)
+    
+    # Update Density
+    Fx = rho * Vx
+    Fy = rho * Vy
+    divFx = np.gradient(Fx, axis=1)
+    divFy = np.gradient(Fy, axis=0)
+    
+    rho = rho - dt * (divFx + divFy) + dt * src * mask
+    rho = np.maximum(rho, 0.1)
+    
+    # Update Velocity (Gravity)
+    gradRx = np.gradient(rho, axis=1)
+    gradRy = np.gradient(rho, axis=0)
+    Vx = Vx - dt * 0.5 * gradRx
+    Vy = Vy - dt * 0.5 * gradRy
+    
+    # Update Vorticity
+    dOm_x = np.gradient(Omega, axis=1)
+    dOm_y = np.gradient(Omega, axis=0)
+    adv_x = Vx * dOm_x
+    adv_y = Vy * dOm_y
+    
+    Omega = Omega + dt * (v_src * mask - adv_x - adv_y - 0.01 * Omega)
+    
+    # Plot every 50 steps
+    if t % 50 == 0:
+        plt.figure(figsize=(5,5))
+        cmap = 'inferno' if not bang else 'jet'
+        plt.imshow(rho, cmap=cmap, origin='lower')
+        if max_o > 0.1:
+            plt.contour(Omega, levels=8, colors='cyan', linewidths=1)
+        title = "Step " + str(t)
+        if bang: title += " (BANG!)"
+        plt.title(title)
+        plt.colorbar()
+        plt.show()
+        print("Step", t, "| Rho:", round(max_r,2), "| Om:", round(max_o,2))
+
+print("Done.")
